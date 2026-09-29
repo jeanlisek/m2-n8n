@@ -1,0 +1,18 @@
+# n8ncli ignored files
+.env
+n8n/config/sync-state.json
+n8n/config/unconfigured-credentials.json
+n8n/config/workflow-folders.json
+n8n/config/cache/
+n8n/references/
+
+# Uniquement les workflows du projet « Veille AO » (pas les exercices, tutoriels ni « [Veille L1] »)
+n8n/workflows/*
+!n8n/workflows/Sandbox/
+n8n/workflows/Sandbox/*
+!n8n/workflows/Sandbox/Veille AO*
+
+# Fichier de compétence généré par n8ncli
+.agents/
+
+.DS_Store
