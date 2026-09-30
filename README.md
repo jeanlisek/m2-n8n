@@ -37,7 +37,7 @@ flowchart LR
 
 | Workflow | Déclencheur | Rôle |
 |---|---|---|
-| **1 · Veille quotidienne** | lun–ven 7h30 (relance unique à 8h30 si échec) | Collecte BOAMP + TED depuis la dernière exécution réussie, pré-filtre, score Mistral par lots de 20, notes des AO « y aller », email, écriture dans le tableau |
+| **1 · Veille quotidienne** | lun–ven 7h30 (relance unique à 8h30 si échec) | Collecte BOAMP + TED depuis la dernière exécution réussie, pré-filtre (onglet Filtres), score Mistral par lots de 20, notes des AO « y aller » (plafond temporaire : ceux des 10 AO de l'email), email, écriture dans le tableau, alerte sur toute panne |
 | **2 · Actions du tableau** | modification d'une ligne de l'onglet « Appels offres » | Note demandée → note en ~2 min ; go → 2 échéances dans l'agenda ; no-go sans raison → rappel par email |
 | **3 · Bilan mensuel** | 1er jour ouvré du mois, 8h | Décisions, raisons des no-go, AO ratés, échantillon d'AO écartés → email à l'associé |
 | **4 · Générer une note** | appelé par 1 et 2 | Lit les fiches références (PDF ou Google Docs), Mistral rédige les 6 rubriques obligatoires, crée le Google Doc, renvoie le lien |

@@ -223,6 +223,24 @@ const lun_ven_8h30_relance = trigger({
   config: { name: 'Lun–ven 8h30 (relance)', parameters: { rule: { interval: [{ field: 'cronExpression', expression: '0 30 8 * * 1-5' }] } }, position: [0, 496] }
 });
 
+const erreur_pendant_la_veille = trigger({
+  type: 'n8n-nodes-base.errorTrigger',
+  version: 1,
+  config: { name: 'Erreur pendant la veille', position: [-400, 1400] }
+});
+
+const marquer_l_ex_cution_en_chec_erreur = node({
+  type: 'n8n-nodes-base.googleSheets',
+  version: 4.7,
+  config: { name: 'Marquer l\u2019exécution en échec (erreur)', parameters: { resource: 'sheet', operation: 'update', documentId: { __rl: true, mode: 'id', value: '1nx_9Z7myjoq2p7ctsjxJAyOgiN1BgVexegCI_f4xubg', cachedResultName: 'Tableau de suivi – Veille AO' }, sheetName: { __rl: true, mode: 'name', value: 'Exécutions' }, columns: { mappingMode: 'defineBelow', value: { id_execution: expr('{{ $json.execution.id }}'), statut: 'échec', erreur: expr('{{ $json.execution.lastNodeExecuted }} : {{ $json.execution.error?.message }}') }, matchingColumns: ['id_execution'], schema: [{ id: 'id_execution', displayName: 'id_execution', required: false, defaultMatch: false, display: true, type: 'string', canBeUsedToMatch: true }, { id: 'statut', displayName: 'statut', required: false, defaultMatch: false, display: true, type: 'string', canBeUsedToMatch: true }, { id: 'erreur', displayName: 'erreur', required: false, defaultMatch: false, display: true, type: 'string', canBeUsedToMatch: true }] } }, credentials: { googleSheetsOAuth2Api: newCredential('Google Sheets account 2', 'A20S4lJM1bs7wCV1') }, position: [-176, 1400], onError: 'continueRegularOutput' }
+});
+
+const alerter_le_porteur_erreur = node({
+  type: 'n8n-nodes-base.gmail',
+  version: 2.2,
+  config: { name: 'Alerter le porteur (erreur)', parameters: { resource: 'message', operation: 'send', sendTo: 'jean-li.sek@joliment.fr', subject: expr('{{ $now.setZone(\'Europe/Paris\').hour >= 8 ? \'[Veille AO] ÉCHEC de la relance 8h30 – relance manuelle requise\' : \'[Veille AO] Échec de la veille – nouvelle tentative à 8h30\' }}'), emailType: 'text', message: expr('La veille quotidienne s\u2019est arrêtée sur une erreur.\nÉtape : {{ $(\'Erreur pendant la veille\').first().json.execution.lastNodeExecuted }}\nErreur : {{ $(\'Erreur pendant la veille\').first().json.execution.error?.message }}\nExécution : {{ $(\'Erreur pendant la veille\').first().json.execution.url }}\n\n{{ $now.setZone(\'Europe/Paris\').hour >= 8 ? \'La relance automatique a échoué. Relancez le workflow « Veille AO · 1 Veille quotidienne » à la main dans n8n.\' : \'Une seule nouvelle tentative aura lieu automatiquement à 8h30.\' }}'), options: { appendAttribution: false } }, credentials: { gmailOAuth2: newCredential('Gmail account', 'zsxWFhN0AKvr8cBW') }, position: [48, 1400], webhookId: 'a255ef08-ea49-46da-938f-f6eba558c95e' }
+});
+
 const wf = workflow('fDgXbeCJMpde4cCg', 'Veille AO · 1 Veille quotidienne', { timezone: 'Europe/Paris', executionOrder: 'v1', availableInMCP: true, binaryMode: 'separate' });
 
 export default wf
@@ -269,3 +287,6 @@ export default wf
   .add(sticky('### 2. Collecte des 3 sources principales\nChaque source : 3 tentatives (5 s d\'écart). Échec persistant → branche « Panne d\'une source ». Toutes les sources du lot 1 sont principales : une panne arrête tout.', [], { name: 'Sticky Note adeeefec', color: 5, width: 304, position: [-32, -864] }))
   .add(sticky('## Veille AO · 1 Veille quotidienne\n\nLun–ven 7h30 (heure de Paris), relance unique à 8h30 si 7h30 n\'a pas réussi. Couvre tout ce qui a été publié depuis la dernière exécution réussie (onglet Exécutions).\n\n**Squelette** : les nœuds préfixés [À CONFIGURER] attendent la vérification des 5 hypothèses (point ouvert n°1), l\'accès Mistral (n°2), les poids et le seuil (n°4 et 5).\n\nSpec : phases 1 à 3 du lot 1 ; architecture : docs/specs/2026-09-29-veille-ao-architecture-design.md', [], { name: 'Sticky Note e4d5b42a', color: 7, width: 1152, position: [-32, -608] }))
   .add(sticky('### [À CONFIGURER]\n- **Fuseau horaire** : réglé sur Europe/Paris à la création ; à vérifier dans les paramètres du workflow.\n- **Tableau de suivi** : choisir le Google Sheets dans chaque nœud Sheets (onglets : Appels d\'offres, Décideurs, Organismes surveillés, AO ratés, Pondérations, Exécutions).\n- **Sources** : URL, paramètres et format de réponse des 3 API → ajuster aussi les chemins dans « Préparer les AO » et « Filtrer les nominations ».\n- **Email** : adresse du porteur ; lien du tableau dans « Construire l\'email ».\n- **Coût** : estimation grossière en tokens, à remplacer par le coût réel Mistral.', [], { name: 'Sticky Note b3f45842', color: 3, height: 480, position: [-32, -352] }))
+  .add(erreur_pendant_la_veille)
+  .to(marquer_l_ex_cution_en_chec_erreur)
+  .to(alerter_le_porteur_erreur)
