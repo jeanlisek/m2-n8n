@@ -60,11 +60,11 @@ Données internes lues dans Google Drive : fiches références (dossier `1UmYCTY
 
 1. **Démarrage** : déclencheurs 7h30 et 8h30. Lecture de l'onglet Exécutions. À 8h30, si l'exécution quotidienne du jour a réussi, arrêt sans action. Sinon, période = dernière exécution réussie → maintenant (3 jours en arrière s'il n'y en a aucune) ; ajout d'une ligne « en cours » ; lecture de l'onglet Filtres.
 2. **Collecte** (chaque source : 3 tentatives, 5 s d'écart) :
-   - **BOAMP** (API open data, sans compte) : avis de marché de type SERVICES publiés depuis le début de la période, pagination par 100.
-   - **TED** (API publique, sans compte) : avis de marché d'acheteurs **hors de France** (les AO français viennent du BOAMP, ce qui évite les doublons), limités aux codes CPV de l'onglet Filtres, pagination par 100.
+   - **BOAMP** (API open data, sans compte) : avis de marché de type SERVICES publiés depuis **la veille** du début de la période (les sources ajoutent des avis en cours de journée et peuvent antidater ; le recouvrement est absorbé par le dédoublonnage), pagination par 100.
+   - **TED** (API publique, sans compte) : avis de marché d'acheteurs **hors de France** (les AO français viennent du BOAMP, ce qui évite les doublons), limités aux codes CPV de l'onglet Filtres, depuis la veille du début de la période, pagination par 100.
    - **Journal officiel** (nominations) : nœud **désactivé** en attendant l'accès à l'API Légifrance (compte PISTE, application de production).
-3. **Préparation et pré-filtre** : mise au même format ; un avis BOAMP est gardé si l'un de ses codes CPV commence par un code de l'onglet Filtres **ou** si son objet contient un mot-clé de l'onglet Filtres (42 % des avis BOAMP n'ont pas de CPV lisible : un filtre CPV seul ferait rater des AO) ; suppression des doublons et des AO déjà présents dans le tableau ; comptage des annonces examinées.
-4. **Score** : lecture des Pondérations, des organismes surveillés et des fiches références ; découpage des nouveaux AO en **lots de 20** (un lot unique de ~185 AO produisait des notes stéréotypées) ; un appel Mistral par lot, 2 en parallèle, textes externes transmis comme données non fiables, consigne de calibrage (utiliser toute l'échelle 0-100) ; calcul du score pondéré, recommandation (y aller ≥ seuil ; à creuser ≥ seuil − 15 ; non) ; sélection des 10 meilleurs, marqués « faibles » si aucun ne dépasse le seuil.
+3. **Préparation et pré-filtre** : mise au même format ; un avis BOAMP est gardé si l'un de ses codes CPV commence par un code de l'onglet Filtres **ou** si son objet contient un mot-clé de l'onglet Filtres (42 % des avis BOAMP n'ont pas de CPV lisible : un filtre CPV seul ferait rater des AO) ; suppression des doublons et des AO déjà présents dans le tableau ; comptage des annonces examinées. **Si l'onglet Filtres ne fournit ni code ni mot-clé, l'exécution s'arrête en erreur** (donc alerte) au lieu de produire une veille vide.
+4. **Score** : lecture des Pondérations (**un poids ou le seuil manquant ou non numérique arrête l'exécution en erreur ; il n'y a pas de valeur par défaut**), des organismes surveillés et des fiches références ; découpage des nouveaux AO en **lots de 20** (un lot unique de ~185 AO produisait des notes stéréotypées) ; un appel Mistral par lot, 2 en parallèle, textes externes transmis comme données non fiables, consigne de calibrage (utiliser toute l'échelle 0-100) ; calcul du score pondéré, recommandation (y aller ≥ seuil ; à creuser ≥ seuil − 15 ; non) ; sélection des 10 meilleurs, marqués « faibles » si aucun ne dépasse le seuil.
 5. **Notes** : appel de WF4 pour chaque AO « y aller » **parmi les 10 retenus pour l'email** (plafond temporaire, voir « Écarts assumés »).
 6. **Décideurs** : liste des organismes surveillés = acheteurs d'AO « y aller » sur 12 mois + onglet Organismes surveillés (+ tableur clients, désactivé) ; filtrage des nominations ; Mistral propose un angle d'approche ; ajout à l'onglet Décideurs. **Inactif tant que le Journal officiel n'est pas branché.**
 7. **Email et clôture** : email HTML au porteur (AO groupés par recommandation avec acheteur, objet, date limite, score, lien de l'annonce, lien de la note ou lien vers le tableau pour la demander ; décideurs ; compteurs examinés / nouveaux / retenus) ; ajout de tous les nouveaux AO au tableau, y compris écartés, avec « présenté_le » pour ceux de l'email et le lien de la note ; ajout des décideurs ; ligne Exécutions en « succès » avec examinés, retenus et coût estimé.
@@ -78,6 +78,7 @@ Relance manuelle : le porteur exécute WF1 à la main depuis n8n.
 - Message d'alerte : à 7h30, « nouvelle tentative à 8h30 » ; à 8h30, « relance manuelle requise ».
 - L'exécution de 8h30 relance automatiquement si celle de 7h30 n'a pas réussi, quelle qu'en soit la cause.
 - Tous les nœuds Google Sheets, Google Drive et Gmail réessaient 3 fois (5 s d'écart) en cas d'erreur passagère de l'API.
+- **Configuration vide ou incomplète** (onglet Filtres sans code ni mot-clé, Pondérations sans poids ou sans seuil) : arrêt en erreur, donc alerte, plutôt qu'une veille vide ou des scores à zéro en silence.
 - **Risque résiduel accepté** : si l'exécution s'interrompt entre l'envoi de l'email et l'écriture des AO dans le tableau (fenêtre de quelques secondes), la relance de 8h30 recollecte et renvoie les mêmes AO (doublon d'email, notes régénérées). L'ordre inverse (écrire avant d'envoyer) ferait au contraire disparaître des AO sans jamais les présenter en cas de panne de l'envoi ; le doublon est le moindre mal.
 
 ## WF2 · Actions du tableau
@@ -114,6 +115,48 @@ Déclencheur lun.–ven. 8h ; poursuite uniquement le premier jour ouvré du moi
 | Organismes surveillés | Acheteurs 12 mois + tableur clients + liste fixe | Onglet rempli avec les 11 clients et partenaires cités sur ecosysgroup.com ; tableur clients non branché | Brancher le tableur clients s'il existe |
 | Titres TED | Avis en version française | Début de titre en français (pays, catégorie), suite dans la langue d'origine | Traduction prévue au lot 2 |
 
+## Relecture hostile du 2026-09-30
+
+Résultat d'une relecture adversariale de ce document et de la réalisation. Les garde-fous sont des exigences ; leur statut est indiqué.
+
+### Garde-fous
+
+| Élément | Dérive constatée ou possible | Garde-fou | Statut |
+|---|---|---|---|
+| Onglet Filtres vide ou renommé | 0 AO gardé, exécution « succès », email « aucun nouvel appel d'offres » | Arrêt en erreur avec alerte si aucun code ni mot-clé | **Implémenté** (30/09) |
+| Pondérations incomplètes | poids 0 et seuil par défaut : tous les scores à 0, tout en « non » | Arrêt en erreur avec alerte ; aucune valeur par défaut | **Implémenté** (30/09) |
+| Avis antidatés ou ajoutés en journée | jamais collectés avec une requête sur la seule date de la période | Collecte depuis la veille de la période, dédoublonnage par id_source | **Implémenté** (30/09) |
+| « Organismes surveillés = acheteurs d'AO « y aller » sur 12 mois » | boucle de rétroaction : les acheteurs bien notés par l'IA gagnent le bonus « acheteur », donc restent bien notés | La liste dérivée ne retient que les acheteurs d'AO ayant reçu une décision **go** humaine | À faire (avant activation de la section Décideurs, qui utilise cette liste) |
+| Justifications du score (`arguments`) calculées puis jetées | l'équipe ne voit jamais pourquoi un AO a son score | Colonne `arguments` écrite dans l'onglet Appels offres | À faire |
+| Avis écartés par le pré-filtre non enregistrés | l'échantillon mensuel d'« AO écartés » ne couvre que les AO notés, jamais les faux négatifs du filtre | Compteur d'écartés dans Exécutions (fait : examinées / nouvelles) ; échantillon aléatoire de 10 écartés par le filtre écrit dans un onglet dédié | À décider |
+| Plafond de 10 notes | un jour à 23 « y aller », 13 AO recommandés sans note et l'email ne le dit pas | L'email indique « N autres AO recommandés sans note, à demander dans le tableau » | À faire |
+| Relance manuelle après échec à 8h30 | une exécution manuelle qui échoue n'alerte personne (le déclencheur d'erreur ne s'applique qu'aux exécutions planifiées) | La procédure de relance manuelle impose de vérifier le statut de l'exécution dans n8n | Documenté ici |
+| Coût du score proportionnel au volume | un rattrapage après 3 jours de panne = 1 000 avis = 50 appels Mistral sans alerte | Alerte au porteur au-delà de 20 lots dans une exécution | À faire |
+| Liens des annonces insérés dans l'email HTML | une URL contenant un guillemet casse le HTML ou injecte un attribut | Seules les URL en `https://` sont insérées, guillemets échappés | À faire |
+| Onglet Appels offres relu en entier à chaque exécution | 70 à 185 lignes par jour → 30 000 par an ; lecture de plus en plus lente | Archivage par année ou dédoublonnage sur une Data Table n8n ; alerte au-delà de 10 000 lignes | À planifier |
+| Fiches références transmises en entier à l'IA | « lisibles en une fois » vrai pour 2 fiches ; personne ne mesure quand on en ajoute | Alerte au-delà de 300 000 caractères de fiches | À faire |
+| Décideurs (section inactive) | aucune durée de conservation implémentée alors que la spec métier l'exige | Purge automatique des lignes de plus de N mois, N fixé par le référent, avant activation | À faire avant activation |
+| Alerte par Gmail uniquement | si Gmail ou l'identifiant Google est la cause de la panne, l'alerte ne part pas | Accepté en phase de test ; second canal à l'élargissement | Accepté |
+| Lots de 20 constitués dans l'ordre de collecte | un AO est noté relativement à ses 19 voisins | Accepté comme limite du score par IA ; le test chiffré mesure la stabilité | Accepté |
+
+### Arbitrages à trancher (associé et porteur)
+
+1. **Notes automatiques** : (a) garder le plafond de 10 jusqu'au test chiffré ; (b) plafonner par coût, par exemple 200 000 tokens par jour ; (c) noter tous les « y aller » en montant le seuil à 75 ; (d) aucune note automatique, seulement à la demande.
+2. **AO « à creuser » jamais présentés** : (a) statu quo ; (b) les jours faibles, présenter le reliquat non présenté des 5 derniers jours ; (c) récapitulatif hebdomadaire des non-présentés.
+3. **Coût** : (a) estimation étiquetée comme telle ; (b) appels directs à l'API Mistral, qui renvoie la consommation réelle ; (c) rapprochement mensuel avec la facture Mistral.
+4. **TED France** : (a) exclusion maintenue une fois l'hypothèse ci-dessous testée ; (b) inclusion avec dédoublonnage acheteur + objet ; (c) institutions européennes seulement.
+5. **Indicateur « 2 h de veille économisées par semaine »** : (a) saisie hebdomadaire du temps passé ; (b) retiré de la phase de test.
+
+### Faits à tester (avant d'écrire un garde-fou)
+
+- « Tout avis français publié dans TED est aussi au BOAMP » (justifie l'exclusion de TED France) : comparer sur une semaine les avis TED `buyer-country=FRA` avec le BOAMP.
+- Fréquence des avis BOAMP antidatés (date de parution antérieure au jour d'ajout) : comparer deux collectes à 24 h d'intervalle sur les mêmes dates.
+- Délai réel avant la limite de cellules Google Sheets au rythme constaté.
+
+### Ce qu'il ne faut pas simplifier
+
+L'onglet Exécutions ; le dédoublonnage par `id_source` ; les 3 tentatives et la relance de 8h30 ; les balises « données non fiables » dans les prompts ; l'écriture des AO écartés après notation ; le déclencheur d'erreur ; la colonne `échéances_créées`.
+
 ## Éléments encore provisoires
 
 | Élément | Dépend de |
@@ -129,4 +172,4 @@ Déclencheur lun.–ven. 8h ; poursuite uniquement le premier jour ouvré du moi
 - Les essais ont été faits **en réel** plutôt qu'avec des données simulées : sous-workflow 4 (notes de test), workflow 2 (3 cas sur une ligne TEST), workflow 1 (deux exécutions complètes sur 3 jours de publications : 502 annonces examinées, 185 nouvelles, 10 notes). Les données de test du tableau ont été effacées ; restent à supprimer à la main 2 événements d'agenda (5 et 15 novembre) et les notes TEST du dossier des notes.
 - Le déclencheur d'erreur du workflow 1 n'est vérifiable que sur une exécution planifiée (documentation n8n : il ne se déclenche jamais en exécution manuelle).
 - **Première exécution planifiée le 2026-09-30 à 7h30 : succès** en 7 min (349 annonces examinées, 69 nouvelles, 23 « y aller », 10 notes, email envoyé) ; la relance de 8h30 s'est arrêtée en 3 s en constatant le succès de 7h30.
-- **Heure de publication des sources, vérifiée** : BOAMP met en ligne les avis du jour la veille au soir ; TED publie avant 7h30 (53 avis datés du 30/09 collectés à 7h30 le 30/09). Un avis publié après 7h30 est collecté le lendemain (période « depuis la dernière exécution réussie »).
+- **Heure de publication des sources** (observations des 29 et 30/09) : le jeu de données BOAMP est retraité **dans la nuit à une heure variable** (22h11 le 28/09, 3h12 le 30/09) et **des avis datés du jour continuent d'apparaître en journée** : le 30/09, 23 avis de services datés du jour, absents de la collecte de 7h30, existaient à 15h. TED avait publié ses avis du jour avant 7h30 le 30/09 (53 avis datés du 30/09 collectés), sur une seule journée d'observation. Conséquence : une partie des avis du jour est collectée le lendemain, ce que la période « depuis la dernière exécution réussie » et la collecte depuis la veille absorbent sans perte ; l'affirmation initiale « la veille au soir » était fausse.
