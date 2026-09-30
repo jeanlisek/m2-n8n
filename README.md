@@ -107,6 +107,16 @@ Assumés et documentés dans la spec (section « Écarts assumés » et « Relec
 - un doublon d'email reste possible si l'exécution s'interrompt dans les secondes qui séparent l'envoi de l'écriture dans le tableau ;
 - l'alerte de panne passe par Gmail : si Gmail est la cause de la panne, elle ne part pas.
 
+## Méthode
+
+Le projet a été mené avec trois fiches de méthode réutilisables, versionnées dans [`skills/`](skills/), qui s'enchaînent :
+
+1. [**interview**](skills/interview/SKILL.md) : cadrage par entretien, une question à la fois, jusqu'à une spécification vérifiable, puis exploration de ce qui existe déjà avant de figer le besoin. C'est ainsi que la spec métier a été produite.
+2. [**hostile-review**](skills/hostile-review/SKILL.md) : relecture adversariale de la spec puis de la réalisation (la lettre contre l'esprit, contenus malveillants, dérive dans le temps, contradictions, exigences invérifiables, poids). Ses conclusions du 30/09 sont intégrées à la spec technique.
+3. [**doubt-driven-dev**](skills/doubt-driven-dev/SKILL.md) : avant qu'une décision ne compte, tenter de la réfuter : test réel pour ce qui touche au monde extérieur (c'est ce qui a montré que le BOAMP publie aussi en journée), relecteur sans contexte pour le raisonnement.
+
+Chaque fiche est un fichier Markdown autonome, applicable à tout projet, pas seulement aux automatisations.
+
 ## Contenu du dépôt
 
 ```
@@ -115,6 +125,7 @@ n8n/
   config/                                       # configuration n8ncli
 docs/
   specs/                                        # spec technique, décisions, relecture hostile
+skills/                                         # méthode : interview, hostile-review, doubt-driven-dev
 ```
 
 Les workflows sont exportés depuis n8n Cloud avec [`n8ncli`](https://www.npmjs.com/package/@workflows-accelerator/n8n-cli) (`n8ncli pull`). **Aucun secret n'est versionné** : les identifiants (Google, Gmail, Mistral) restent chiffrés dans n8n et les workflows ne font référence qu'à leur nom.

@@ -16,6 +16,3 @@ n8n/workflows/Sandbox/*
 .agents/
 
 .DS_Store
-
-# Compétences locales de l’auteur (hors livrable)
-skills/
