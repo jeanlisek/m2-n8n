@@ -125,19 +125,11 @@ n8n/
   config/                                       # configuration n8ncli
 docs/
   specs/                                        # spec technique, décisions, relecture hostile
+  reinstallation.md                             # réinstaller sur une autre instance n8n
 skills/                                         # méthode : interview, hostile-review, doubt-driven-dev
 ```
 
-Les workflows sont exportés depuis n8n Cloud avec [`n8ncli`](https://www.npmjs.com/package/@workflows-accelerator/n8n-cli) (`n8ncli pull`). **Aucun secret n'est versionné** : les identifiants (Google, Gmail, Mistral) restent chiffrés dans n8n et les workflows ne font référence qu'à leur nom.
-
-## Réinstaller sur une autre instance n8n
-
-1. Installer `n8ncli` (Node.js ≥ 20) : `npm install -g @workflows-accelerator/n8n-cli`
-2. `n8ncli init --url https://<instance>.app.n8n.cloud --access-token <jeton MCP>` (jeton : Settings → Instance-level MCP → Connect)
-3. `n8ncli push` pour créer les workflows (procédure non encore éprouvée sur une instance vierge), puis dans n8n :
-   - créer les identifiants Google Sheets, Google Drive, Google Docs, Gmail, Google Calendar et Mistral Cloud ;
-   - lancer « 0 · Installation du tableau », puis reporter l'ID du tableur, du dossier des fiches références et du dossier des notes dans les nœuds concernés ;
-   - publier **4** avant **1** et **2** (n8n exige qu'un sous-workflow soit publié avant ses appelants).
+Les workflows sont exportés depuis n8n Cloud avec [`n8ncli`](https://www.npmjs.com/package/@workflows-accelerator/n8n-cli) (`n8ncli pull`). **Aucun secret n'est versionné** : les identifiants (Google, Gmail, Mistral) restent chiffrés dans n8n et les workflows ne font référence qu'à leur nom. Pour réinstaller sur une autre instance : [docs/reinstallation.md](docs/reinstallation.md).
 
 ## Reste à faire (lot 1)
 
