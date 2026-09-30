@@ -12,7 +12,7 @@ Ce document décrit l'architecture n8n du lot 1 (MVP) **telle qu'elle est constr
 
 | # | Workflow | État |
 |---|---|---|
-| 1 | Veille quotidienne | **Publié**, testé de bout en bout (collecte, score, notes, email, tableau). Section Décideurs en attente (Journal officiel) |
+| 1 | Veille quotidienne | **Publié**, testé de bout en bout, première exécution planifiée réussie le 2026-09-30. Section Décideurs en attente (Journal officiel) |
 | 2 | Actions du tableau | **Publié**, testé en réel (no-go sans raison, go, note demandée) |
 | 3 | Bilan mensuel | Configuré, **non publié** : adresse de l'associé manquante |
 | 4 | Générer une note | **Publié**, testé |
@@ -77,6 +77,8 @@ Relance manuelle : le porteur exécute WF1 à la main depuis n8n.
 - **Toute autre erreur** (IA, tableur, email…) : le **déclencheur d'erreur** du workflow marque la ligne Exécutions en « échec » et alerte le porteur. Il ne se déclenche que pour les exécutions planifiées (pas pour les exécutions manuelles de test).
 - Message d'alerte : à 7h30, « nouvelle tentative à 8h30 » ; à 8h30, « relance manuelle requise ».
 - L'exécution de 8h30 relance automatiquement si celle de 7h30 n'a pas réussi, quelle qu'en soit la cause.
+- Tous les nœuds Google Sheets, Google Drive et Gmail réessaient 3 fois (5 s d'écart) en cas d'erreur passagère de l'API.
+- **Risque résiduel accepté** : si l'exécution s'interrompt entre l'envoi de l'email et l'écriture des AO dans le tableau (fenêtre de quelques secondes), la relance de 8h30 recollecte et renvoie les mêmes AO (doublon d'email, notes régénérées). L'ordre inverse (écrire avant d'envoyer) ferait au contraire disparaître des AO sans jamais les présenter en cas de panne de l'envoi ; le doublon est le moindre mal.
 
 ## WF2 · Actions du tableau
 
@@ -125,4 +127,6 @@ Déclencheur lun.–ven. 8h ; poursuite uniquement le premier jour ouvré du moi
 
 - Chaque workflow a été validé par n8n avant création.
 - Les essais ont été faits **en réel** plutôt qu'avec des données simulées : sous-workflow 4 (notes de test), workflow 2 (3 cas sur une ligne TEST), workflow 1 (deux exécutions complètes sur 3 jours de publications : 502 annonces examinées, 185 nouvelles, 10 notes). Les données de test du tableau ont été effacées ; restent à supprimer à la main 2 événements d'agenda (5 et 15 novembre) et les notes TEST du dossier des notes.
-- Le déclencheur d'erreur du workflow 1 n'est vérifiable que sur une exécution planifiée.
+- Le déclencheur d'erreur du workflow 1 n'est vérifiable que sur une exécution planifiée (documentation n8n : il ne se déclenche jamais en exécution manuelle).
+- **Première exécution planifiée le 2026-09-30 à 7h30 : succès** en 7 min (349 annonces examinées, 69 nouvelles, 23 « y aller », 10 notes, email envoyé) ; la relance de 8h30 s'est arrêtée en 3 s en constatant le succès de 7h30.
+- **Heure de publication des sources, vérifiée** : BOAMP met en ligne les avis du jour la veille au soir ; TED publie avant 7h30 (53 avis datés du 30/09 collectés à 7h30 le 30/09). Un avis publié après 7h30 est collecté le lendemain (période « depuis la dernière exécution réussie »).
