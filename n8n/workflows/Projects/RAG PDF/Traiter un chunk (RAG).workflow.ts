@@ -43,3 +43,4 @@ export default wf
   .to(embedder_le_passage)
   .to(pr_parer_l_insertion)
   .to(ins_rer_en_staging)
+  .add(sticky('## Traiter un chunk (un passage)\nGemini produit une phrase de situation (25 mots au plus) et 5 à 8 mots-clés avec leur traduction (contextual retrieval). Texte vectorisé = chapitre + contexte + mots-clés + passage ; le texte **stocké** reste le texte brut de la page, donc citable. Embedding `gemini-embedding-001` (3 072 dimensions) par appel HTTP : le nœud d\'embeddings natif ne s\'exécute pas dans un flux et stockait des vecteurs vides en cas de quota dépassé. Insertion en `documents_staging`.\nL\'échec d\'un passage n\'arrête pas les autres : la complétude est contrôlée à la fin.', [entr_e_un_chunk, g_n_rer_le_contexte_du_passage, pr_parer_le_texte_contextualis, embedder_le_passage, pr_parer_l_insertion, ins_rer_en_staging], { name: 'Note : traitement du passage', color: 5, width: 1480, height: 420, position: [-60, -170] }))
