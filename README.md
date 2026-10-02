@@ -168,7 +168,7 @@ flowchart LR
 
 | Workflow | Déclencheur | Rôle |
 |---|---|---|
-| **RAG PDF Sandbox** | formulaire public ; chat public | Dépôt : contrôle (≤ 500 pages), empreinte SHA-256, réservation atomique, lancement de l'indexation sans attente. Chat : historique de session (Postgres), routage LLM (question autonome, requêtes multiples, traduction, documents visés, question ambiguë, HyDE), recherche hybride RRF (vecteurs + plein texte, voisins, chapitres, quota par document), juge de pertinence Gemini, génération avec mémoire, vérification des citations, journal des questions. |
+| **RAG PDF** (le workflow principal) | formulaire public ; chat public | Dépôt : contrôle (≤ 500 pages), empreinte SHA-256, réservation atomique, lancement de l'indexation sans attente. Chat : historique de session (Postgres), routage LLM (question autonome, requêtes multiples, traduction, documents visés, question ambiguë, HyDE), recherche hybride RRF (vecteurs + plein texte, voisins, chapitres, quota par document), juge de pertinence Gemini, génération avec mémoire, vérification des citations, journal des questions. |
 | **Indexer un document** | appelé par le dépôt | OCR Mistral page par page, description des images, nettoyage (en-têtes, folios), pages imprimées et chapitres lus dans les en-têtes, résumé du document, découpage récursif borné à la page (index et table des matières écartés), résumés de chapitre (avec seconde passe après saturation), contrôle de complétude puis bascule atomique en production. |
 | **Traiter un chunk** | appelé par l'indexation, une fois par passage | Phrase de contexte et mots-clés bilingues (contextual retrieval), embedding, insertion en staging. L'échec d'un passage ne touche pas les autres. |
 
