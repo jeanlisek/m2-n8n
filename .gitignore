@@ -6,11 +6,10 @@ n8n/config/workflow-folders.json
 n8n/config/cache/
 n8n/references/
 
-# Uniquement les workflows du projet « Veille AO » (pas les exercices, tutoriels ni « [Veille L1] »)
+# Uniquement les workflows des projets (dossier Projects : « Veille AO », « RAG PDF »),
+# pas les exercices du Sandbox, les tutoriels ni « [Veille L1] »
 n8n/workflows/*
-!n8n/workflows/Sandbox/
-n8n/workflows/Sandbox/*
-!n8n/workflows/Sandbox/Veille AO*
+!n8n/workflows/Projects/
 
 # Fichier de compétence généré par n8ncli
 .agents/

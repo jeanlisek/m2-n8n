@@ -1,5 +1,7 @@
 # Veille AO & décideurs publics — n8n
 
+> Ce dépôt contient deux projets n8n du M2. Le premier, décrit ci-dessous, est la veille des appels d'offres. Le second, **RAG PDF Sandbox** (questions-réponses sur des PDF avec citations exactes), est présenté dans la section [RAG PDF Sandbox](#second-projet--rag-pdf-sandbox) et détaillé dans sa [spec](docs/specs/2026-09-30-rag-pdf-sandbox-specs.md).
+
 Automatisation n8n qui, chaque matin de semaine, repère les **appels d'offres publics** pertinents pour une entreprise de conseil, les note avec une **IA européenne (Mistral)**, rédige une **note d'analyse** pour les plus intéressants et envoie un **email récapitulatif**. Un **Google Sheets partagé** sert de tableau de suivi : décisions go / no-go, demandes de notes, historique, pondérations du score.
 
 Deux rôles reviennent dans ce document : le **porteur** (responsable du projet, seul destinataire pendant la phase de test) et l'**associé** (valide les pondérations du score et reçoit le bilan mensuel).
@@ -107,6 +109,14 @@ Assumés et documentés dans la spec (section « Écarts assumés » et « Relec
 - un doublon d'email reste possible si l'exécution s'interrompt dans les secondes qui séparent l'envoi de l'écriture dans le tableau ;
 - l'alerte de panne passe par Gmail : si Gmail est la cause de la panne, elle ne part pas.
 
+## Second projet : RAG PDF Sandbox
+
+Un assistant qui répond à des questions sur des PDF déposés publiquement, **uniquement à partir de ce qu'il peut prouver** : chaque affirmation est suivie du document, de la page (PDF et imprimée) et d'un extrait copié mot pour mot, vérifié automatiquement contre le texte indexé ; hors de la base, il répond exactement « Je ne trouve pas cette information dans les documents. ».
+
+Trois workflows : **RAG PDF Sandbox** (formulaire de dépôt et chat publics), **Indexer un document** (en arrière-plan : OCR Mistral, nettoyage, pages imprimées et chapitres, description des images, découpage borné à la page, contexte par passage, résumés de chapitre, bascule atomique en production) et **Traiter un chunk** (un sous-workflow par passage). La réponse suit le pipeline vu en cours : *Context → Routing → Search → Reranking → Generation*, avec un historique de session en Postgres, un routage LLM (question autonome, requêtes multiples, traduction, documents visés, HyDE), une recherche hybride RRF dans Supabase (pgvector + plein texte, voisins et chapitres), un juge de pertinence Gemini et une vérification des citations après génération.
+
+État au 2 octobre 2026 : deux livres indexés (520 passages, 40 résumés de chapitre) ; jeu de 10 questions passé 3 fois (20 réponses justes sur 21, 9 refus sur 9) ; questions à plusieurs documents et questions ambiguës traitées. Détails, faits testés, limites et arbitrages : [spec RAG PDF Sandbox](docs/specs/2026-09-30-rag-pdf-sandbox-specs.md).
+
 ## Méthode
 
 Le projet a été mené avec trois fiches de méthode réutilisables, versionnées dans [`skills/`](skills/), qui s'enchaînent :
@@ -121,15 +131,16 @@ Chaque fiche est un fichier Markdown autonome, applicable à tout projet, pas se
 
 ```
 n8n/
-  workflows/Sandbox/Veille AO · *.workflow.ts   # les 5 workflows (SDK n8n, TypeScript)
-  config/                                       # configuration n8ncli
+  workflows/Projects/Veille AO/   # les 5 workflows de la veille (SDK n8n, TypeScript)
+  workflows/Projects/RAG PDF/     # les 3 workflows du RAG PDF Sandbox
+  config/                         # configuration n8ncli
 docs/
-  specs/                                        # spec technique, décisions, relecture hostile
-  reinstallation.md                             # réinstaller sur une autre instance n8n
-skills/                                         # méthode : interview, hostile-review, doubt-driven-dev
+  specs/                          # specs techniques des deux projets, décisions, relectures hostiles
+  reinstallation.md               # réinstaller la veille sur une autre instance n8n
+skills/                           # méthode : interview, hostile-review, doubt-driven-dev
 ```
 
-Les workflows sont exportés depuis n8n Cloud avec [`n8ncli`](https://www.npmjs.com/package/@workflows-accelerator/n8n-cli) (`n8ncli pull`). **Aucun secret n'est versionné** : les identifiants (Google, Gmail, Mistral) restent chiffrés dans n8n et les workflows ne font référence qu'à leur nom. Pour réinstaller sur une autre instance : [docs/reinstallation.md](docs/reinstallation.md).
+Les workflows sont exportés depuis n8n Cloud avec [`n8ncli`](https://www.npmjs.com/package/@workflows-accelerator/n8n-cli) (`n8ncli pull`). **Aucun secret n'est versionné** : les identifiants (Google, Gmail, Mistral, Gemini, Supabase) restent chiffrés dans n8n et les workflows ne font référence qu'à leur nom. Pour réinstaller sur une autre instance : [docs/reinstallation.md](docs/reinstallation.md).
 
 ## Reste à faire (lot 1)
 
