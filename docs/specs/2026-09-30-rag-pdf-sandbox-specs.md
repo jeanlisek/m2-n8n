@@ -43,6 +43,7 @@ Depuis la v1.3, l'objectif est passé d'un « RAG classique niveau 0 » à une v
 
 - **Modèles** :
   - Chat, routage, juge de pertinence, contexte des passages, résumés : `models/gemini-flash-lite-latest`. `flash-latest` renvoyait des 503 répétés et `pro-latest` a un quota nul sur cette clé (constaté le 2026-10-01).
+  - **Réglages d'échantillonnage** : température **0** pour ce qui décide (routeur, juge), **0,2** pour ce qui rédige (génération, contexte des passages, résumés) ; **top-p fixé explicitement à 0,95** sur les six appels Gemini depuis le 2026-10-02 (c'était la valeur par défaut du modèle, laissée implicite jusque-là ; à ces températures son effet est marginal, contrôlé par un tour de 10 questions). `thinkingBudget` volontairement absent (voir faits tranchés).
   - Embeddings : `gemini-embedding-001`, 3072 dimensions, appelé en HTTP (`embedContent`). `gemini-embedding-2` a été essayé puis abandonné : ses vecteurs ne sont pas comparables à ceux de `001`, et l'utiliser seulement pour la question cassait la recherche.
   - OCR : Mistral `mistral-ocr-latest` (node n8n pour le texte ; API HTTP pour la description des images, que le node n'expose pas).
 - **Base : Supabase**, projet `rag-pdf` (ref `tuxeoixdfxgetvhebmar`, région `eu-west-3`) :
